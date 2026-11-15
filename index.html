@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MarsPath | Mars EVA Route & Survival System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{--pn:rgba(9,13,24,.88);--bd:rgba(255,255,255,.11);--tx:#e2e8f0;--mu:#94a3b8;--ok:#34d399;--wn:#fbbf24;--bad:#f43f5e;--ac:#f97316;color-scheme:dark;box-sizing:border-box}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:#06080f;color:var(--tx);font:13px Inter,system-ui,sans-serif;overflow:hidden;user-select:none}
+.m{font-family:'JetBrains Mono',monospace}
+#cv{position:fixed;inset:0}#mk{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.wp{position:absolute;transform:translate(-50%,-110%);pointer-events:auto;cursor:pointer;font-size:10px;font-weight:600;white-space:nowrap;background:rgba(2,6,14,.9);border:1px solid var(--bd);border-radius:8px;padding:2px 7px}
+.wp:hover{border-color:var(--ac)}
+.pn{position:fixed;background:var(--pn);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--bd);border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,.7);overflow:auto;padding:12px;z-index:5}
+#L{top:calc(8px + env(safe-area-inset-top,0px));bottom:8px;left:8px;width:310px}
+#R{top:calc(8px + env(safe-area-inset-top,0px));bottom:8px;right:8px;width:370px}
+h1{font-size:15px;margin:0}h2{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:12px 0 5px;font-family:'JetBrains Mono',monospace}
+.row{display:flex;gap:5px;flex-wrap:wrap}
+button,select{font:inherit;color:var(--tx);background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:10px;padding:6px 9px;cursor:pointer}
+select{width:100%;background:#0f172a}button.on{background:rgba(249,115,22,.25);border-color:var(--ac)}
+.sm{font-size:11px;padding:5px 7px}.mode{width:100%;text-align:left;margin-bottom:5px}.mode small{display:block;color:var(--mu);font-size:11px}
+.go{width:100%;background:linear-gradient(90deg,#ea580c,#d97706);font-weight:700;padding:11px;border:0;margin-top:10px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:6px}.c{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:12px;padding:7px 9px}
+.c b{display:block;font:700 14px 'JetBrains Mono',monospace;margin-top:2px}.c i{font-style:normal;font-size:10px;color:var(--mu)}
+.bar{position:relative;height:10px;border-radius:9px;background:#1e293b;overflow:hidden}.bar>div{height:100%;transition:width .2s}
+.lim{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.card{border-radius:12px;padding:7px 9px;margin-bottom:6px;font-size:11px;line-height:1.45;color:#cbd5e1}
+.pos{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3)}.neg{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3)}
+.card b{display:block;font-size:12px}.pos b{color:#6ee7b7}.neg b{color:#fda4af}
+table{width:100%;border-collapse:collapse;font-size:11px}td,th{padding:4px 3px;text-align:left}tr.cmp{cursor:pointer}tr.cmp.on{background:rgba(249,115,22,.18)}
+#pf{width:100%;height:70px;background:#020617;border-radius:10px;border:1px solid var(--bd);display:block}
+#hud{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);width:min(92vw,520px);z-index:9;opacity:0;pointer-events:none;transition:.25s;border-color:var(--ac)}
+#hud.show{opacity:1;transform:translate(-50%,0)}
+a{color:#7dd3fc}.note{font-size:10.5px;color:var(--mu);line-height:1.5}
+#tg{display:none;position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:9;background:var(--ac);border:0;font-weight:700}
+@media(max-width:860px){#L,#R{top:auto;left:8px;right:8px;width:auto;height:44vh;bottom:calc(8px + env(safe-area-inset-bottom,0px))}#R{display:none}body.r #R{display:block}body.r #L{display:none}#tg{display:block;bottom:calc(46vh + 16px)}}
+</style></head><body>
+<div id="cv"></div><div id="mk"></div><div id="hv" class="note m" style="position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;background:var(--pn);padding:3px 9px;border-radius:9px">Hover over terrain to read coordinates</div>
+<button id="tg" onclick="document.body.classList.toggle('r')">Controls ⇄ Analysis</button>
+
+<aside id="L" class="pn">
+ <div class="m" style="font-size:10px;color:#93c5fd">NASA SPACE APPS 2026 · MARTIAN SURVIVAL GUIDE</div>
+ <h1>MarsPath <span style="color:var(--mu);font-weight:400;font-size:11px">EVA Route Engine</span></h1>
+ <h2>Operations sector</h2>
+ <div class="row"><button id="s-gale" class="sm on" onclick="setSec('gale')">Gale · Mount Sharp</button><button id="s-jezero" class="sm" onclick="setSec('jezero')">Jezero · Neretva</button></div>
+ <h2>A · Start</h2><select id="ss" onchange="pick()"></select>
+ <h2>B · Target</h2><select id="st" onchange="pick()"></select>
+ <div class="row" style="margin-top:6px;align-items:center"><span class="note">Map click:</span><button id="k-target" class="sm on" onclick="setClick('target')">Target</button><button id="k-start" class="sm" onclick="setClick('start')">Start</button></div>
+ <div id="geo" class="note" style="margin-top:6px"></div><h2>Strategy</h2>
+ <button id="m-safe" class="mode on" onclick="setMode('safe')">🛡️ Safest route<small>Avoids steep slopes, dunes, cold and comms shadows.</small></button>
+ <button id="m-fast" class="mode" onclick="setMode('fast')">⚡ Fastest route<small>Short route focused on distance and O₂.</small></button>
+ <button id="m-science" class="mode" onclick="setMode('science')">🔬 Science route<small>Passes through clay and sulfate layers.</small></button>
+ <h2>NASA data layers</h2>
+ <div class="row" id="lays"></div>
+ <h2>Real NASA DEM</h2><div class="note">Go to the sector center in Mars Trek, download the 12×12 km elevation image (PNG/JPG, north up) and upload it here. Min/max are the black and white elevations of the image (m).</div><div class="row" style="margin-top:5px;align-items:center"><input id="dmin" type="number" value="-4600" style="width:82px;background:#0f172a;color:#e2e8f0;border:1px solid var(--bd);border-radius:8px;padding:4px"><input id="dmax" type="number" value="-3500" style="width:82px;background:#0f172a;color:#e2e8f0;border:1px solid var(--bd);border-radius:8px;padding:4px"><span class="note">min / max m</span></div><input type="file" accept="image/*" class="note" style="margin-top:5px;max-width:100%" onchange="loadDEM(this.files[0])"><button class="sm" style="margin-top:5px" onclick="setSec(sec)">↺ Back to procedural terrain</button><h2>Options</h2>
+ <label class="note"><input type="checkbox" id="ref" checked onchange="draw3D()"> NASA referans koridoru</label><br>
+ <label class="note"><input type="checkbox" id="fol" checked> Lock camera to astronaut</label><br><label class="note"><span>🌪️ Weather scenario in right panel</span></label><div class="note">👥 A second astronaut (buddy system) follows a few steps behind.</div>
+ <button class="go" onclick="toggleSim()" id="gob">▶ Start astronaut walk</button>
+ <h2>Sources</h2>
+ <div class="note"><a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener">Mars Trek</a> · <a href="https://astrogeology-usgs.hub.arcgis.com/pages/interactive-maps-mars" target="_blank" rel="noopener">USGS</a> · <a href="https://science.nasa.gov/resource/curiositys-proposed-path-up-mount-sharp/" target="_blank" rel="noopener">Curiosity route</a> · <a href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener">Worldview</a></div>
+</aside>
+
+<aside id="R" class="pn">
+ <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="m" style="font-size:10px;color:var(--ac)">EVA MISSION ANALYSIS</div><h1>Conditions & Survival</h1></div><div style="text-align:right"><div id="score" class="m" style="font-size:22px;font-weight:700">–</div><div class="note">Suitability score</div></div></div>
+ <div id="verdict" class="card" style="margin-top:8px"></div>
+ <div class="g" id="met"></div>
+ <h2>O₂ budget (one-third rule: outbound · return · reserve)</h2>
+ <div class="bar"><div id="o2b"></div><span class="lim" style="left:33.3%"></span></div>
+ <div class="note" id="o2t" style="margin-top:3px"></div>
+ <h2>Elevation & slope profile <span id="gain" style="color:#fdba74"></span></h2><canvas id="pf"></canvas>
+ <h2>Weather & dust storm · hourly</h2><select id="wx" onchange="update()"><option value="calm">Calm</option><option value="local">Local dust lift</option><option value="global">Global dust storm</option></select><div id="wxt" style="margin-top:6px"></div><h2>Route recommendation & hazards</h2><div id="rec"></div><h2>Strategy comparison</h2>
+ <table id="cmp"></table>
+ <h2>Positive conditions</h2><div id="pos"></div>
+ <h2>Negative conditions & risks</h2><div id="neg"></div>
+ <div class="note" style="margin-top:8px">⚠️ Coordinates are tied to the real landing sites (Bradbury 4.5895°S 137.4417°E; Octavia E. Butler 18.4446°N 77.4509°E; 100 m cells, Mars radius 3389.5 km). Load a real DEM with “Real NASA DEM”; without one, terrain is procedural and landmark positions other than the landing sites are schematic. Physics coefficients are simplified estimates.</div>
+</aside>
+
+<div id="info" class="pn" style="display:none;left:50%;top:48px;transform:translateX(-50%);width:min(92vw,380px);z-index:12;border-color:var(--ac)"></div><div id="hud" class="pn"><div style="display:flex;justify-content:space-between"><b>LIVE EVA TELEMETRY</b><span id="hp" class="m" style="color:var(--ac)">%0</span></div>
+ <div class="bar" style="margin:6px 0"><div id="hb" style="width:0;background:linear-gradient(90deg,#34d399,#fb923c)"></div></div>
+ <div class="m" style="font-size:11px;display:flex;justify-content:space-between"><span>Slope <b id="hs"></b></span><span>O₂ <b id="ho" style="color:#38bdf8"></b></span><span>Temp <b id="ht"></b></span><span>Comms <b id="hl"></b></span></div>
+ <div id="ha" class="card" style="margin:6px 0 0"></div></div>
+
+<script>
+const $=i=>document.getElementById(i),N=120,W=24,CELL=100;
+const SEC={
+gale:{relief:820,seed:101,sz:'Gale Krateri',ref:[[18,16],[32,22],[38,36],[42,52],[52,72],[62,56],[74,76],[86,94],[98,104]],
+ wp:[['Bradbury Landing Site',18,16,'Landing base'],['Yellowknife Bay',32,22,'Ancient lakebed'],['Bagnold Dunes',46,44,'Basaltic dunes'],['Vera Rubin Ridge',62,56,'Hematite ridge'],['Glen Torridon',52,72,'Clay basin'],['Greenheugh Pediment',76,78,'Rock plateau'],['Gediz Vallis',86,94,'Ancient channel'],['Sulfate Unit',98,104,'Sulfate layer']]},
+jezero:{relief:640,seed:202,sz:'Jezero Krateri',ref:[[22,88],[30,74],[48,52],[56,36],[76,42],[84,24],[98,18]],
+ wp:[['Octavia E. Butler',22,88,'Landing base'],['Séítah Dunes',36,68,'Dunes & rock'],['Three Forks',48,52,'Sample depot'],['Kodiak Butte',64,76,'Erosional remnant'],['Hawksbill Pass',56,36,'Delta slope'],['Belva Crater',76,42,'Impact crater'],['Neretva Vallis',84,24,'Ancient river'],['West Crater Rim',98,18,'Observation ridge']]}};
+const LAY={optical:'🛰️ HiRISE',mola:'🏔️ MOLA',slope:'⚠️ Slope',thermal:'☢️ Thermal',comms:'📡 Comms'};
+const MODE={safe:'Safe',fast:'Fast',science:'Science'};
+const INFO={
+'Bradbury Landing Site':['Curiosity landed here on August 6, 2012. Named after Ray Bradbury; about 2.4 km from the center of the landing ellipse.','Flat, solid ground used for the first drives and system tests.'],
+'Yellowknife Bay':['The depression where Curiosity drilled its first sample. The “John Klein” rock contains smectite clay minerals, evidence of an ancient freshwater lake and conditions suitable for microbial life.','Ancient freshwater lakebed: the main target of the habitability study.'],
+'Bagnold Dunes':['Dark, wind-blown basaltic sand dunes stretching along the foot of Mount Sharp. High risk of wheel and boot sinking.','Study of wind-driven sand movement and abrasion.'],
+'Vera Rubin Ridge':['A high ridge rich in hematite (iron oxide). It matches the hematite unit seen from orbit and gives a wide view.','Hematite: a strong sign of a watery past.'],
+'Glen Torridon':['A broad basin rich in clay minerals. It matches the clay unit seen from orbit and is a relatively safe travel corridor.','Clay minerals: a record of water and chemical conditions.'],
+'Greenheugh Pediment':['An elevated plateau capped with hard sandstone. Exit slopes can be steep.','Sandstone and cross-bedding: traces of a flowing-water environment.'],
+'Gediz Vallis':['A channel carved by an ancient water and debris flow coming down the flank of Mount Sharp. Debris deposits line its edges.','Records of ancient water and debris transport.'],
+'Sulfate Unit':['The sulfate (salt) unit in the upper layers of Mount Sharp. It records Mars’ drying period and the decline in water.','Geological record of climate change.'],
+'Octavia E. Butler':['The point where Perseverance landed on February 18, 2021; the main landing and solar power base on the floor of Jezero Crater.','Main base: communications and power hub.'],
+'Séítah Dunes':['Olivine-rich, rugged terrain where sand dunes and rocks mix. Requires caution against loose sand traps.','Olivine: a volcanic mineral that alters quickly in water.'],
+'Three Forks':['The depot where Perseverance stored its sample tubes. Samples were left here for future return to Earth.','Sample depot: a critical logistics point for future missions.'],
+'Kodiak Butte':['An eroded table mountain (butte) made of ancient lake sediments. Its layers show changes in lake level.','Sediment layers: a record of ancient lake levels.'],
+'Hawksbill Pass':['A scientific ramp on the delta slope containing fine-grained mudstones.','Mudstone: sedimentary rock deposited in calm water.'],
+'Belva Crater':['An impact crater that exposes deep subsurface layers. Its walls are steep rock.','Exposed deep layers: a cross-section of past geology.'],
+'Neretva Vallis':['A gorge where an ancient river cut through the crater wall to feed Jezero Lake. The water source of the delta.','Ancient river inlet: the main record of delta formation.'],
+'West Crater Rim':['A high observation ridge overlooking the whole basin from the crater rim. A line of sight suitable for radio relay.','High point for observation and communications.']
+};
+const WXS={calm:{name:'Calm',dust:0,v:1,b:1,risk:'Low dust; standard EVA conditions.'},local:{name:'Local dust lift',dust:1,v:.9,b:1.2,risk:'Local dust lifts in the afternoon; visibility and solar power drop, speed falls 10%, battery use rises 20%.'},global:{name:'Global dust storm',dust:2,v:.8,b:1.5,risk:'Solar power and visibility fall sharply; speed drops 20%, battery use rises 50%. EVA should stop in the afternoon.'}};
+const WHY={safe:'Avoids steep slopes and dune traps, reducing fall and sinking risk; also keeps the line of sight to base for comms.',fast:'The shortest path in distance and O₂ use. Suitable when terrain is easy and weather is calm, but it includes many steep sections.',science:'Passes through clay and sulfate layers, raising sample value; the safety margin is narrower than on other routes.'};
+let evaH=null;
+function wxTable(){const W=WXS[$('wx').value],rows=[];let best=null;
+for(let h=0;h<24;h++){const day=Math.max(0,Math.sin(Math.PI*(h-6)/12)),T=-62+4*W.dust+26*(1-.25*W.dust)*Math.sin(2*Math.PI*(h-9)/24),tau=[.3,.8,2.2][W.dust]*(.5+.5*day),sol=Math.round(day*Math.exp(-tau*.5)*100),wind=4+6*Math.max(0,Math.sin(Math.PI*(h-8)/12))+W.dust*4;
+let st,k;if(day<=0){st='Night · no EVA';k='bad'}else if(tau>1.5){st='Low visibility · postpone';k='bad'}else if(T<-75||wind>15){st='Caution';k='wn'}else{st='Suitable';k='ok'}
+if(k==='ok'&&(!best||T>best.T))best={h,T};
+rows.push(`<tr><td class="m">${String(h).padStart(2,'0')}:00</td><td class="m">${T.toFixed(0)}°</td><td class="m">${wind.toFixed(0)}</td><td class="m">${tau.toFixed(1)}</td><td class="m">%${sol}</td><td style="color:${colv(k)}">${st}</td></tr>`)}
+evaH=best?best.h:null;
+$('wxt').innerHTML=`<div class="note" style="margin-bottom:4px">${W.risk}</div><table><tr class="m" style="color:var(--mu)"><th>Hour</th><th>Temp</th><th>Wind m/s</th><th>Toz τ</th><th>Sun</th><th>EVA</th></tr>${rows.join('')}</table><div class="note" style="margin-top:4px">${best?`Best EVA window: ${String(best.h).padStart(2,'0')}:00 (approx. ${best.T.toFixed(0)}°C).`:'No suitable EVA window in this scenario; postpone mission.'} There is no official hourly forecast for Mars; this table is a scenario model based on general NASA observation dynamics.</div>`}
+function hazList(m){const L=[];
+if(m.steep)L.push(['Steep slope',`${m.steep*100} m at ≥16° slope; slip and knee torque risk.`,'bad']);
+if(m.maxS>20)L.push(['Critical slope',`Max ${m.maxS.toFixed(1)}°: high fall risk.`,'bad']);
+if(m.dune)L.push(['Loose sand',`${m.dune*100} m: boot sinking and ≈22% extra metabolic cost.`,'wn']);
+if(m.rock)L.push(['Sharp rock',`${m.rock*100} m: abrasion of the suit's outer layer.`,'wn']);
+if(m.cold)L.push(['Cold shadow',`${m.cold*100} m below −62°C; heater battery drains quickly.`,'wn']);
+if(m.losP<85)L.push(['Comms shadow',`${100-m.losP}% of the route has no line of sight to base; a relay point is needed.`,'wn']);
+if(m.climb>150)L.push(['Climb',`+${Math.round(m.climb)} m: more fatigue and O₂ use.`,'wn']);
+if(m.o2>26.7)L.push(['O₂ reserve',`One-way ${m.o2.toFixed(1)}%: reserve is shrinking.`,m.o2>33.3?'bad':'wn']);
+L.push(['Radiation',`About ${m.rad.toFixed(0)} µSv; rises with duration and altitude.`,'ok']);
+return L}
+function recUI(){const ks=['safe','fast','science'],nm={safe:'Safest',fast:'Fastest',science:'Science'},okK=ks.filter(k=>!res[k].m.bad&&res[k].m.o2<=33.3),pool=(okK.length?okK:ks).slice().sort((a,b)=>(res[b].m.score-res[a].m.score)||(res[a].m.o2-res[b].m.o2)),best=pool[0],B=res[best].m;
+const alt=ks.filter(k=>k!==best).map(k=>`${nm[k]} (score ${res[k].m.score}, ${res[k].m.steep} steep steps, ${res[k].m.dune} dune steps)`).join('; ');
+const eva=evaH!=null?`${String(evaH).padStart(2,'0')}:00 — warmest dust-free suitable hour`:'no suitable window, postpone mission';
+$('rec').innerHTML=`<div class="card" style="border:1px solid var(--ok);background:rgba(52,211,153,.08)"><b style="color:var(--ok)">Recommended: ${nm[best]} rota${B.bad?' (target unreachable)':''}</b>${WHY[best]}<div style="margin-top:6px">Score ${B.score}, one-way O₂ %${B.o2.toFixed(1)} (limit 33.3%), ${B.km.toFixed(1)} km / ${fT(B.h)}. Compared with alternatives: ${alt}.</div><div style="margin-top:6px"><b style="display:inline;color:#e2e8f0">EVA window:</b> ${eva}.</div></div>`+ks.map(k=>{const m=res[k].m;return`<div class="card" style="border:1px solid ${k===best?'var(--ok)':'var(--bd)'};background:rgba(255,255,255,.03)"><b style="color:#e2e8f0">${nm[k]} · score ${m.score} · ${m.km.toFixed(1)} km · ${fT(m.h)}${k===best?' · RECOMMENDED':''}</b>${hazList(m).map(x=>`<div style="margin-top:3px"><span style="color:${colv(x[2])}">●</span> <b style="display:inline;color:${colv(x[2])}">${x[0]}:</b> ${x[1]}</div>`).join('')}</div>`}).join('')}
+function showInfo(i){const w=SEC[sec].wp[i],d=INFO[w[0]]||['',''],x=w[1],z=w[2],e=$('info');e.style.display='block';
+e.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px"><div><div class="m" style="font-size:10px;color:var(--ac)">${w[3].toUpperCase()}</div><h1>${w[0]}</h1></div><button class="sm" onclick="$('info').style.display='none'">✕</button></div><p style="color:#cbd5e1;font-size:12px;line-height:1.5;margin:8px 0">${d[0]}</p><div class="note m">📍 ${ll(x,z)}<br>⛰️ ${el(x,z)} m · slope ${SL[z*N+x].toFixed(1)}° · comms ${LOS[z*N+x]?'var':'yok'}</div><div style="font-size:12px;color:#fcd34d;margin-top:7px">🔬 ${d[1]}</div><div class="note" style="margin-top:6px">${sec==='gale'?'Source: NASA/JPL Curiosity mission data.':'Description is general knowledge, not verified against NASA sources.'}</div><div class="row" style="margin-top:9px"><button class="sm" onclick="setPoint({x:${x},z:${z}},'start',false,${i})">Set as A (start)</button><button class="sm" onclick="setPoint({x:${x},z:${z}},'target',false,${i})">Set as B (target)</button></div>`}
+let sec='gale',layer='optical',mode='safe',clickMode='target',st={x:18,z:16},tg={x:86,z:94},res={},cur=null,sim={on:false,p:0},cmpOn=true;
+const H=new Float32Array(N*N),SL=new Float32Array(N*N),HZ=new Uint8Array(N*N),RD=new Float32Array(N*N),TP=new Float32Array(N*N),LOS=new Uint8Array(N*N);
+let scene,cam,ren,ctl,mesh,rt,rf,bS,bT,astro,astro2,wps=[];const sc=()=>SEC[sec].relief/4.2;
+
+// ---------- Arazi üretimi ----------
+const hs=(x,y,s)=>{const n=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return n-Math.floor(n)};
+function vn(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(ix,iy,s),b=hs(ix+1,iy,s),c=hs(ix,iy+1,s),d=hs(ix+1,iy+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y,s){let v=0,a=.5,f=1;for(let i=0;i<4;i++){v+=a*vn(x*f,y*f,s+i*13);f*=2.02;a*=.5}return v}
+function build(){const S=SEC[sec],g=sec==='gale';S.relief=S.r0||(S.r0=S.relief);S.real=0;
+for(let z=0;z<N;z++)for(let x=0;x<N;x++){const i=z*N+x,nx=x/N,nz=z/N;let h,t=0;
+if(g){const dc=Math.hypot(nx-1.05,nz-1.05),ms=Math.max(0,1.35-dc)*3.8,cd=Math.abs((nx-.85)-(nz-.92)*.45),gc=(nx>.65&&nz>.68&&cd<.055)?-.55*(1-cd/.055):0,c1=Math.hypot(nx-.28,nz-.55),cr=c1<.09?-.35*Math.cos(c1/.09*Math.PI/2):0;
+ h=ms+Math.sin(ms*6.5)*.14+gc+cr+fbm(nx*6,nz*6,S.seed)*.65;const db=Math.abs((nx+nz)*.5-.45);
+ if(db<.065&&nx>.25&&nx<.68){h+=Math.sin(nx*140+nz*90)*.06;t=1}else if(cd<.07&&nx>.65)t=2;else if((nx>.45&&nz>.62&&nx<.65)||(nx>.82&&nz>.88))t=3}
+else{const rd=Math.hypot(nx-.95,nz-.15),rim=Math.max(0,1.25-rd)*3.1,bd=Math.hypot(nx-.63,nz-.35),bh=bd<.08?-.48*(1-bd/.08)+(bd>.065?.15:0):0,kd=Math.hypot(nx-.53,nz-.63),km=kd<.055?.42:0;
+ h=rim+bh+km+fbm(nx*6.5,nz*6.5,S.seed)*.58;
+ if(nx>.24&&nx<.44&&nz>.52&&nz<.72)t=1;else if(bd<.095)t=2;else if((nx>.42&&nx<.62&&nz>.32&&nz<.52)||(nx>.72&&nz<.32))t=3}
+H[i]=h;HZ[i]=t}
+derive()}
+function derive(){const S2=sc();
+for(let z=0;z<N;z++)for(let x=0;x<N;x++){const i=z*N+x,hL=H[z*N+Math.max(0,x-1)],hR=H[z*N+Math.min(N-1,x+1)],hD=H[Math.max(0,z-1)*N+x],hU=H[Math.min(N-1,z+1)*N+x],dx=(hR-hL)*S2/(2*CELL),dz=(hU-hD)*S2/(2*CELL);
+ SL[i]=Math.atan(Math.hypot(dx,dz))*57.3;const nh=Math.min(1,Math.max(0,H[i]/4.2));RD[i]=.28+nh*.34;TP[i]=-36-nh*24-Math.max(0,-dx*2.2)*28}
+const b=SEC[sec].wp[0];calcLOS(b[1],b[2]);}
+// Ana üs ile doğrudan görüş hattı (2 m anten yüksekliği, ışın taraması)
+function calcLOS(bx,bz){const S=sc(),h0=H[bz*N+bx]*S+2;
+for(let z=0;z<N;z++)for(let x=0;x<N;x++){const dx=x-bx,dz=z-bz,n=Math.max(Math.abs(dx),Math.abs(dz)),h1=H[z*N+x]*S+2;let v=1;
+ for(let k=1;k<n;k++){const t=k/n;if(H[Math.round(bz+dz*t)*N+Math.round(bx+dx*t)]*S>h0+(h1-h0)*t){v=0;break}}LOS[z*N+x]=v}}
+
+// ---------- A* (ikili yığın) ----------
+class Heap{constructor(){this.a=[]}get size(){return this.a.length}
+push(f,i){const a=this.a;a.push([f,i]);let k=a.length-1;while(k>0){const p=(k-1)>>1;if(a[p][0]<=a[k][0])break;[a[p],a[k]]=[a[k],a[p]];k=p}}
+pop(){const a=this.a,t=a[0],l=a.pop();if(a.length){a[0]=l;let k=0;for(;;){let c=2*k+1;if(c>=a.length)break;if(c+1<a.length&&a[c+1][0]<a[c][0])c++;if(a[k][0]<=a[c][0])break;[a[k],a[c]]=[a[c],a[k]];k=c}}return t}}
+function astar(m){const s=st.z*N+st.x,g=tg.z*N+tg.x,G=new Float32Array(N*N).fill(1e9),P=new Int32Array(N*N).fill(-1),cl=new Uint8Array(N*N),hp=new Heap(),S=sc(),hw=m==='science'?.5:1;
+G[s]=0;hp.push(0,s);
+while(hp.size){const c=hp.pop()[1];if(c===g)break;if(cl[c])continue;cl[c]=1;const cx=c%N,cz=(c/N)|0;
+ for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const x=cx+dx,z=cz+dz;if(x<1||z<1||x>=N-1||z>=N-1)continue;const n=z*N+x;if(cl[n]||SL[n]>28)continue;
+ const sl=SL[n],d=dx&&dz?1.414:1,up=Math.max(0,Math.atan2((H[n]-H[c])*S,d*CELL)*57.3),hz=HZ[n];let k=d;
+ if(m==='safe'){k+=Math.pow(sl/6,2.4)*d+up*.12*d;if(hz===1)k+=12*d;if(hz===2)k+=9*d;if(TP[n]<-65)k+=3.5*d;if(!LOS[n])k+=1.2*d}
+ else if(m==='fast'){k+=(sl>16?(sl-14)*.9:sl*.08)*d+up*.06*d;if(hz===1)k+=3.5*d}
+ else{k+=Math.pow(sl/8,2)*d+up*.08*d;if(hz===3)k*=.48;if(hz===1)k+=8*d}
+ const ng=G[c]+k;if(ng<G[n]){G[n]=ng;P[n]=c;hp.push(ng+Math.hypot(tg.x-x,tg.z-z)*hw,n)}}}
+const p=[];let c=g;if(P[g]<0&&g!==s){const r=[s,g];r.bad=true;return r}
+while(c!==-1){p.push(c);if(c===s)break;c=P[c]}return p.reverse()}
+
+// ---------- PLSS & koşul analizi ----------
+function analyze(p){const WX=WXS[$('wx').value],SM=WX.dust>0,S=sc(),o={km:0,climb:0,h:0,o2:0,bat:0,rad:0,maxS:0,los:0,dune:0,rock:0,sci:0,cold:0,steep:0,safe:0,cd:[0],co:[0],bad:!!p.bad};
+for(let i=0;i<p.length;i++){const b=p[i];const s=SL[b],hz=HZ[b];o.maxS=Math.max(o.maxS,s);if(s<10)o.safe++;if(s>=16)o.steep++;if(hz===1)o.dune++;if(hz===2)o.rock++;if(hz===3)o.sci++;if(TP[b]<-62)o.cold++;if(LOS[b])o.los++;
+ if(i){const a=p[i-1],dx=(b%N)-(a%N),dz=((b/N)|0)-((a/N)|0),run=Math.hypot(dx,dz)*CELL,dh=(H[b]-H[a])*S,up=Math.max(0,Math.atan2(dh,run)*57.3);
+ const v=Math.max(1,3.3-.09*up-(hz===1?1:0))*WX.v,dt=run/1000/v;
+ o.km+=run/1000;if(dh>0)o.climb+=dh;o.h+=dt;
+ const od=dt*12.5*(1+up*.04+(hz===1?.22:0));o.o2+=od;o.bat+=(dt*7+(TP[b]<-62?dt*5:0))*WX.b;o.rad+=RD[b]*1000*dt/24;
+ o.cd.push(o.km*1000);o.co.push(o.o2)}}
+const n=p.length;o.losP=Math.round(o.los/n*100);o.safeP=Math.round(o.safe/n*100);o.sciP=Math.round(o.sci/n*100);
+o.score=Math.max(30,Math.min(99,Math.round(100-o.steep*1.2-o.dune*1.6-o.rock-(o.maxS>20?10:0)-(o.losP<80?(80-o.losP)*.3:0)-(o.o2>33.3?15:0)+(mode==='science'?Math.min(6,o.sci*.3):0))));
+o.ver=o.o2<=26.7?['GO','ok','Round trip and reserve O₂ are within limits.']:o.o2<=33.3?['MARGINAL','wn','At the one-third rule limit; reserve is shrinking.']:['NO-GO','bad','One-way O₂ use exceeds 33%; no return margin left.'];
+return o}
+const fT=h=>(h>=1?Math.floor(h)+'s ':'')+Math.round((h%1)*60)+'dk';
+const colv=k=>`var(--${k})`;
+
+function update(){res={};for(const m of['safe','fast','science']){const p=astar(m);res[m]={p,m:null}}
+const keep=mode;for(const m of Object.keys(res)){mode=m;res[m].m=analyze(res[m].p)}mode=keep;cur=res[mode];draw3D();ui()}
+
+function ui(){const m=cur.m;geoUI();$('score').textContent=m.score+'%';$('score').style.color=colv(m.score>=80?'ok':m.score>=60?'wn':'bad');
+const v=$('verdict');v.className='card';v.style.cssText=`border:1px solid ${colv(m.ver[1])};background:rgba(255,255,255,.04)`;v.innerHTML=`<b style="color:${colv(m.ver[1])}">MISSION STATUS: ${m.bad?'ROTA BULUNAMADI':m.ver[0]}</b>${m.bad?'Target unreachable (>28°) arazide izole. Choose another target.':m.ver[2]}`;
+const c=(l,v,k)=>`<div class="c"><i>${l}</i><b style="color:${k||'#fff'}">${v}</b></div>`;
+$('met').innerHTML=c('Distance · Time',m.km.toFixed(2)+' km · '+fT(m.h))+c('PLSS O₂ (one-way)','%'+m.o2.toFixed(1),'#38bdf8')+c('Battery / heater','%'+Math.min(99,m.bat).toFixed(1),'#fbbf24')+c('Radyasyon dozu',m.rad.toFixed(0)+' µSv','#d8b4fe')+c('Comms line of sight','%'+m.losP,colv(m.losP>=80?'ok':'wn'))+c('Max slope · Suit',m.maxS.toFixed(1)+'° · '+(m.maxS<15&&m.dune<4?'Low':m.maxS<21?'Medium':'High'),colv(m.maxS<15?'ok':m.maxS<21?'wn':'bad'));
+const ob=$('o2b');ob.style.width=Math.min(100,m.o2)+'%';ob.style.background=colv(m.ver[1]);$('o2t').textContent=`One-way %${m.o2.toFixed(1)} · round trip %${(m.o2*2).toFixed(1)} · reserve limit 33.3%`;
+$('gain').textContent='+'+Math.round(m.climb)+' m';
+$('cmp').innerHTML='<tr class="m" style="color:var(--mu)"><th>Strategy</th><th>km</th><th>Time</th><th>O₂</th><th>Skor</th></tr>'+Object.keys(res).map(k=>{const r=res[k].m;return`<tr class="cmp ${k===mode?'on':''}" onclick="setMode('${k}')"><td>${MODE[k]}</td><td>${r.km.toFixed(1)}</td><td>${fT(r.h)}</td><td>%${r.o2.toFixed(0)}</td><td>${r.score}</td></tr>`}).join('');
+const pos=[[`Safe slope corridor (%${m.safeP})`,`${m.safeP}% of route cells are below 10°; steady walking.`],[`Comms coverage %${m.losP}`,m.losP>=80?'Direct line of sight to base is largely maintained.':'Partial coverage; relays recommended at waypoints.'],m.sciP>12?[`Science value (%${m.sciP} clay/sulfate)`,'Hydrated mineral layers allow sampling.']:[`O₂ budget %${m.o2.toFixed(0)}`,m.o2<=33.3?'Within the one-third rule; return is assured.':'Limit exceeded.']];
+$('pos').innerHTML=pos.map(a=>`<div class="card pos"><b>${a[0]}</b>${a[1]}</div>`).join('');
+const neg=[];if(m.steep)neg.push([`Steep slope (maks. ${m.maxS.toFixed(1)}°)`,`${m.steep*100} m at ≥16° slope; slip and knee torque risk.`]);
+if(m.dune)neg.push([`Loose sand (${(m.dune*.1).toFixed(1)} km)`,'Boot sinking; ≈22% extra metabolic cost.']);
+if(m.rock)neg.push(['Sharp ventifact rock','Suit outer layer abrasion risk.']);
+if(m.cold)neg.push([`Cold shadow zone (${m.cold*100} m)`,'below −62 °C; heater battery drains quickly.']);
+if(m.losP<85)neg.push([`Comms shadow (%${100-m.losP})`,'Terrain blocks line of sight; link may drop.']);
+if(WXS[$('wx').value].dust)neg.push([WXS[$('wx').value].name,WXS[$('wx').value].risk]);
+if(!neg.length)neg.push(['Low risk','No critical sand, cliffs or comms loss.']);
+$('neg').innerHTML=neg.map(a=>`<div class="card neg"><b>${a[0]}</b>${a[1]}</div>`).join('');
+profile();wxTable();recUI()}
+function profile(){const cv=$('pf'),d=devicePixelRatio||1,w=cv.clientWidth||340,h=cv.clientHeight||70;cv.width=w*d;cv.height=h*d;const x=cv.getContext('2d');x.scale(d,d);const p=cur.p;if(p.length<2)return;
+let mn=1e9,mx=-1e9;p.forEach(i=>{mn=Math.min(mn,H[i]);mx=Math.max(mx,H[i])});const r=Math.max(.3,mx-mn),X=i=>i/(p.length-1)*w,Y=i=>h-8-(H[p[i]]-mn)/r*(h-18);
+for(let i=1;i<p.length;i++){const s=SL[p[i]];x.strokeStyle=s<10?'#34d399':s<18?'#fbbf24':'#f43f5e';x.lineWidth=2.2;x.beginPath();x.moveTo(X(i-1),Y(i-1));x.lineTo(X(i),Y(i));x.stroke()}}
+
+// ---------- Coğrafi referans & gerçek DEM ----------
+SEC.gale.geo={lat:-4.5895,lon:137.4417};SEC.jezero.geo={lat:18.4446,lon:77.4509};SEC.gale.el=-4500;SEC.jezero.el=-2600;
+function ll(x,z){const s=SEC[sec],b=s.wp[0],k=180/Math.PI/3389.5,la=s.geo.lat-(z-b[2])*CELL/1000*k,lo=s.geo.lon+(x-b[1])*CELL/1000*k/Math.cos(s.geo.lat*Math.PI/180);return Math.abs(la).toFixed(4)+(la<0?'°G ':'°K ')+lo.toFixed(4)+'°D'}
+function el(x,z){const s=SEC[sec],b=s.wp[0];return Math.round(s.real?s.dmin+H[z*N+x]*sc():s.el+(H[z*N+x]-H[b[2]*N+b[1]])*sc())}
+function geoUI(){$('geo').innerHTML=`A: ${ll(st.x,st.z)} · ${el(st.x,st.z)} m<br>B: ${ll(tg.x,tg.z)} · ${el(tg.x,tg.z)} m<br>Sector center ≈ ${ll(60,60)}<br>${SEC[sec].real?'<b style="color:var(--ok)">REAL NASA DEM loaded</b>':'Terrain: procedural (no DEM loaded)'}`}
+function loadDEM(f){if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');x.drawImage(im,0,0,N,N);const d=x.getImageData(0,0,N,N).data,mn=+$('dmin').value,R=Math.max(1,+$('dmax').value-mn),s=SEC[sec];
+for(let i=0;i<N*N;i++)H[i]=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)/255*4.2;
+s.relief=R;s.real=1;s.dmin=mn;HZ.fill(0);derive();for(let i=0;i<N*N;i++)if(SL[i]>22)HZ[i]=2;paint();wps.forEach((w,i)=>w.p=g2w(s.wp[i][1],s.wp[i][2],.15));stopSim();update()};im.src=r.result};r.readAsDataURL(f)}
+// ---------- 3B sahne ----------
+const g2w=(x,z,y=.08)=>new THREE.Vector3((x/(N-1)-.5)*W,H[Math.round(z)*N+Math.round(x)]+y,(z/(N-1)-.5)*W);
+function col(i){const h=H[i],s=SL[i],z=HZ[i],C=new THREE.Color();
+if(layer==='optical'){const n=Math.min(1,Math.max(0,h/4));C.setRGB(.66+n*.22,.33+n*.21,.2+n*.14);if(z===1)C.setRGB(.18,.16,.19);else if(z===3)C.setRGB(.84,.64,.44);else if(s>18)C.multiplyScalar(.68)}
+else if(layer==='mola'){const t=Math.min(1,Math.max(0,(h+.3)/4.1));if(t<.25)C.setRGB(.1,.35+t*2,.85);else if(t<.5)C.setRGB(.15,.78,.35);else if(t<.75)C.setRGB(.95,.82,.18);else C.setRGB(.92,.25+(t-.75)*2.5,.2+(t-.75)*2.8)}
+else if(layer==='slope'){if(s<10)C.setRGB(.12,.68,.38);else if(s<20)C.setRGB(.92,.62,.12);else C.setRGB(.88,.18,.22);if(z===1)C.setRGB(.45,.28,.78)}
+else if(layer==='thermal'){const t=Math.min(1,Math.max(0,(TP[i]+85)/52));C.setRGB(.15+t*.8,.25+Math.sin(t*Math.PI)*.45,.85-t*.7)}
+else{LOS[i]?C.setRGB(.15,.7,.45):C.setRGB(.5,.1,.15);C.multiplyScalar(.7+Math.min(1,Math.max(0,h/4))*.3)}
+return C}
+function paint(){const g=mesh.geometry,p=g.attributes.position,c=new Float32Array(p.count*3);for(let i=0;i<N*N;i++){p.setY(i,H[i]);const k=col(i);c[i*3]=k.r;c[i*3+1]=k.g;c[i*3+2]=k.b}p.needsUpdate=true;g.setAttribute('color',new THREE.BufferAttribute(c,3));g.computeVertexNormals();mesh.geometry.computeBoundingSphere()}
+function beacon(c){const g=new THREE.Group(),r=new THREE.RingGeometry(.18,.32,32);r.rotateX(-Math.PI/2);g.add(new THREE.Mesh(r,new THREE.MeshBasicMaterial({color:c,side:2})));const p=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.1,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.75}));p.position.y=.55;g.add(p);return g}
+function initScene(){scene=new THREE.Scene();scene.background=new THREE.Color(0x090b12);scene.fog=new THREE.FogExp2(0x160e0c,.018);
+cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,200);cam.position.set(-14,15,16);
+ren=new THREE.WebGLRenderer({antialias:true});ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));$('cv').appendChild(ren.domElement);
+ctl=new THREE.OrbitControls(cam,ren.domElement);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*.47;ctl.minDistance=3;ctl.maxDistance=38;
+scene.add(new THREE.HemisphereLight(0xffcfa8,0x2b1810,.75));const sun=new THREE.DirectionalLight(0xfff0dd,1.35);sun.position.set(18,22,12);scene.add(sun);
+const geo=new THREE.PlaneGeometry(W,W,N-1,N-1);geo.rotateX(-Math.PI/2);mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.88,metalness:.04}));scene.add(mesh);
+bS=beacon(0x10b981);bT=beacon(0x38bdf8);scene.add(bS,bT);
+astro=new THREE.Group();const b=new THREE.Mesh(new THREE.CylinderGeometry(.11,.13,.36,12),new THREE.MeshStandardMaterial({color:0xf8fafc}));b.position.y=.24;const pk=new THREE.Mesh(new THREE.BoxGeometry(.18,.26,.12),new THREE.MeshStandardMaterial({color:0xcbd5e1}));pk.position.set(0,.27,-.11);const he=new THREE.Mesh(new THREE.SphereGeometry(.11,14,14),new THREE.MeshStandardMaterial({color:0xf59e0b,metalness:.85,roughness:.15}));he.position.y=.48;astro.add(b,pk,he);scene.add(astro);astro2=astro.clone();scene.add(astro2);
+let dn;ren.domElement.addEventListener('pointerdown',e=>dn=[e.clientX,e.clientY]);
+ren.domElement.addEventListener('pointerup',e=>{if(!dn||Math.hypot(e.clientX-dn[0],e.clientY-dn[1])>5)return;const rc=new THREE.Raycaster();rc.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),cam);const h=rc.intersectObject(mesh);if(!h.length)return;
+ const q=h[0].point,x=Math.min(N-2,Math.max(1,Math.round((q.x/W+.5)*(N-1)))),z=Math.min(N-2,Math.max(1,Math.round((q.z/W+.5)*(N-1))));setPoint({x,z},clickMode,true)});
+ren.domElement.addEventListener('pointermove',e=>{const rc=new THREE.Raycaster();rc.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),cam);const h=rc.intersectObject(mesh);if(!h.length)return;const q=h[0].point,x=Math.min(N-2,Math.max(1,Math.round((q.x/W+.5)*(N-1)))),z=Math.min(N-2,Math.max(1,Math.round((q.z/W+.5)*(N-1))));$('hv').textContent=ll(x,z)+' · '+el(x,z)+' m · slope '+SL[z*N+x].toFixed(1)+'°'});
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);if(cur)profile()})}
+function draw3D(){if(rt)scene.remove(rt);if(rf)scene.remove(rf);
+const pts=cur.p.map(i=>g2w(i%N,(i/N)|0,.09));
+if(pts.length>1){rt=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),Math.min(300,pts.length*2),.065,8),new THREE.MeshBasicMaterial({color:{safe:0x10b981,fast:0xf59e0b,science:0xc084fc}[mode]}));scene.add(rt)}
+if($('ref').checked){rf=new THREE.Line(new THREE.BufferGeometry().setFromPoints(SEC[sec].ref.map(a=>g2w(a[0],a[1],.06))),new THREE.LineBasicMaterial({color:0x38bdf8}));scene.add(rf)}
+bS.position.copy(g2w(st.x,st.z,.03));bT.position.copy(g2w(tg.x,tg.z,.03));if(!sim.on){astro.position.copy(bS.position);astro2.position.copy(bS.position)}}
+
+// ---------- Arayüz ----------
+function mkWps(){const o=$('mk');o.innerHTML='';wps=[];const L=SEC[sec].wp,opt=L.map((w,i)=>`<option value="${i}">${w[0]} (${w[3]})</option>`).join('')+'<option value="c">📍 Custom coordinates</option>';
+$('ss').innerHTML=opt;$('st').innerHTML=opt;
+L.forEach((w,i)=>{const e=document.createElement('div');e.className='wp';e.textContent=w[0];e.onclick=ev=>{ev.stopPropagation();showInfo(i)};o.appendChild(e);wps.push({e,p:g2w(w[1],w[2],.15)})})}
+function setPoint(p,which,custom,idx){stopSim();if(which==='start'){st=p;$('ss').value=custom?'c':idx}else{tg=p;$('st').value=custom?'c':idx}update()}
+function pick(){const L=SEC[sec].wp,a=$('ss').value,b=$('st').value;if(a!=='c')st={x:L[a][1],z:L[a][2]};if(b!=='c')tg={x:L[b][1],z:L[b][2]};stopSim();update()}
+function setSec(s){sec=s;stopSim();['gale','jezero'].forEach(k=>$('s-'+k).className='sm'+(k===s?' on':''));build();paint();mkWps();const L=SEC[s].wp;st={x:L[0][1],z:L[0][2]};tg={x:L[6][1],z:L[6][2]};$('ss').value=0;$('st').value=6;update()}
+function setLayer(l){layer=l;document.querySelectorAll('#lays button').forEach(b=>b.className='sm'+(b.dataset.l===l?' on':''));paint()}
+function setMode(m){mode=m;stopSim();['safe','fast','science'].forEach(k=>$('m-'+k).className='mode'+(k===m?' on':''));cur=res[m];draw3D();ui()}
+function setClick(k){clickMode=k;$('k-target').className='sm'+(k==='target'?' on':'');$('k-start').className='sm'+(k==='start'?' on':'')}
+$('lays').innerHTML=Object.keys(LAY).map(k=>`<button class="sm${k===layer?' on':''}" data-l="${k}" onclick="setLayer('${k}')">${LAY[k]}</button>`).join('');
+
+// ---------- Canlı yürüyüş simülasyonu (mesafe tabanlı) ----------
+function toggleSim(){if(sim.on){stopSim();return}if(cur.p.length<2||cur.p.bad)return;sim={on:true,p:0};$('gob').textContent='■ Stop walk';$('hud').classList.add('show')}
+function stopSim(){sim.on=false;sim.p=0;$('gob').textContent='▶ Start astronaut walk';$('hud').classList.remove('show');if(cur&&astro){astro.position.copy(bS.position);astro2.position.copy(bS.position)}}
+function stepSim(){if(!sim.on)return;const m=cur.m,p=cur.p;sim.p=Math.min(1,sim.p+1/1500);const D=sim.p*m.cd[m.cd.length-1];let i=1;while(i<p.length-1&&m.cd[i]<D)i++;
+const f=Math.min(1,Math.max(0,(D-m.cd[i-1])/Math.max(1,m.cd[i]-m.cd[i-1]))),a=g2w(p[i-1]%N,(p[i-1]/N)|0,.04),b=g2w(p[i]%N,(p[i]/N)|0,.04),pos=a.clone().lerp(b,f);
+astro.position.copy(pos);if(b.distanceTo(a)>.001)astro.lookAt(b.x,pos.y,b.z);(sim.h=sim.h||[]).push(pos.clone());astro2.position.copy(sim.h[Math.max(0,sim.h.length-40)]);astro2.rotation.y=astro.rotation.y;astro.position.y+=Math.abs(Math.sin(sim.p*300))*.025;if($('fol').checked)ctl.target.lerp(pos,.12);
+const n=p[i],s=SL[n],hz=HZ[n],o2=m.co[i-1]+(m.co[i]-m.co[i-1])*f;
+$('hp').textContent='%'+Math.round(sim.p*100);$('hb').style.width=sim.p*100+'%';$('hs').textContent=s.toFixed(1)+'°';$('ho').textContent='%'+(100-o2).toFixed(1);$('ht').textContent=Math.round(TP[n])+'°C';$('hl').textContent=LOS[n]?'VAR':'YOK';$('hl').style.color=colv(LOS[n]?'ok':'bad');
+const A=$('ha');let t,k='ok';if(sim.p>=1){t='Target reached. Sampling protocol ready.';sim.on=false;$('gob').textContent='▶ Walk again'}
+else if(s>16){t=`WARNING: ${s.toFixed(1)}° slope! Speed reduced.`;k='bad'}else if(hz===1){t='WARNING: Loose sand; step rate adjusted.';k='wn'}
+else if(!LOS[n]){t='Comms shadow: link to base lost.';k='wn'}else if(hz===3){t='Hydrated clay/sulfate detected; spectrometer active.';k='ok'}else t='Ground stable, nominal O₂ use.';
+A.textContent=t;A.style.cssText=`margin:6px 0 0;border:1px solid ${colv(k)};background:rgba(255,255,255,.04)`}
+const tv=new THREE.Vector3();
+function loop(){requestAnimationFrame(loop);stepSim();ctl.update();wps.forEach(w=>{tv.copy(w.p).project(cam);if(tv.z>1){w.e.style.opacity=0}else{w.e.style.opacity=1;w.e.style.left=(tv.x*.5+.5)*innerWidth+'px';w.e.style.top=(-tv.y*.5+.5)*innerHeight+'px'}});ren.render(scene,cam)}
+window.onload=()=>{initScene();setSec('gale');loop()};
+</script></body></html>
